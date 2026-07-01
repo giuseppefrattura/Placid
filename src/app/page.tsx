@@ -45,8 +45,22 @@ export default async function DashboardPage() {
   try {
     // Attempt database migration and fetch
     await initDb();
-    const result = await query('SELECT * FROM contacts ORDER BY name ASC');
+    const result = await query(`
+      SELECT c.*, 
+             COALESCE(
+               JSON_AGG(
+                 JSON_BUILD_OBJECT('id', con.id, 'consultation_date', con.consultation_date) 
+                 ORDER BY con.consultation_date DESC
+               ) FILTER (WHERE con.id IS NOT NULL), 
+               '[]'
+             ) AS consultations
+      FROM contacts c
+      LEFT JOIN consultations con ON c.id = con.contact_id
+      GROUP BY c.id
+      ORDER BY c.name ASC
+    `);
     contacts = result.rows;
+
   } catch (error) {
     console.error('Remote database connection failed on render. Falling back to local contacts mock:', error);
     dbError = true;
