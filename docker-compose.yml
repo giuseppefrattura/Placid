@@ -1,0 +1,16 @@
+services:
+  placid-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: placid-contacts-app
+    ports:
+      - "3011:3000"
+    env_file:
+      - .env.local
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
