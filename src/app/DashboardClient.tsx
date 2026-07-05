@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Plus, LogOut, Database, Users } from 'lucide-react';
+import { Search, Plus, LogOut, Database, Users, Mail, Copy, X } from 'lucide-react';
 import { Contact, filterContacts, sortContacts, ConsultationFilter, SortBy } from '@/lib/contact-utils';
 import ContactCard from '@/components/ContactCard';
 
@@ -24,6 +24,8 @@ export default function DashboardClient({
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('name');
   const [consultationFilter, setConsultationFilter] = useState<ConsultationFilter>('all');
+  const [inactiveMonths, setInactiveMonths] = useState<number>(3);
+  const [showEmailsModal, setShowEmailsModal] = useState(false);
 
   // UI interactive states
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
@@ -160,7 +162,7 @@ export default function DashboardClient({
 
   // Filter and sort contacts using extracted pure functions
   const filteredContacts = sortContacts(
-    filterContacts(contacts, searchQuery, consultationFilter),
+    filterContacts(contacts, searchQuery, consultationFilter, inactiveMonths),
     sortBy
   );
 
@@ -316,8 +318,33 @@ export default function DashboardClient({
                   <option value="all" style={{ background: '#1c1e2b' }}>Tutti</option>
                   <option value="hasSome" style={{ background: '#1c1e2b' }}>Almeno una</option>
                   <option value="none" style={{ background: '#1c1e2b' }}>Nessuna</option>
+                  <option value="inactive" style={{ background: '#1c1e2b' }}>Inattivi da X mesi</option>
                 </select>
               </div>
+
+              {/* Inactive Months Input */}
+              {consultationFilter === 'inactive' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Mesi:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={inactiveMonths}
+                    onChange={(e) => setInactiveMonths(parseInt(e.target.value) || 1)}
+                    className="form-input"
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '13px',
+                      borderRadius: '8px',
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      borderColor: 'var(--border-color)',
+                      color: 'var(--text-primary)',
+                      height: '36px',
+                      width: '60px'
+                    }}
+                  />
+                </div>
+              )}
 
               {/* Sort Option Select */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -343,8 +370,25 @@ export default function DashboardClient({
                 </select>
               </div>
 
-              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                Trovati: <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{filteredContacts.length}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                  Trovati: <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{filteredContacts.length}</span>
+                </div>
+                <button 
+                  onClick={() => setShowEmailsModal(true)}
+                  className="btn btn-secondary" 
+                  style={{ 
+                    padding: '6px 12px', 
+                    fontSize: '13px', 
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Mail size={14} />
+                  Esporta Email
+                </button>
               </div>
             </div>
 
@@ -387,6 +431,80 @@ export default function DashboardClient({
           </div>
         </div>
       </main>
+
+      {/* Emails Modal */}
+      {showEmailsModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '24px'
+        }}>
+          <div className="glass-panel" style={{
+            width: '100%',
+            maxWidth: '500px',
+            padding: '24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                <Mail size={18} style={{ color: 'var(--primary)' }} />
+                Email dei Contatti
+              </h3>
+              <button 
+                onClick={() => setShowEmailsModal(false)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0 }}>
+              Copia la lista delle email (separate da virgola) per usarle nel tuo client di posta.
+            </p>
+            <textarea
+              readOnly
+              value={filteredContacts.map(c => c.email).join(', ')}
+              className="form-input"
+              style={{
+                width: '100%',
+                height: '150px',
+                resize: 'none',
+                fontFamily: 'monospace',
+                fontSize: '13px',
+                padding: '12px',
+                lineHeight: '1.5'
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
+              <button
+                onClick={() => setShowEmailsModal(false)}
+                className="btn btn-secondary"
+                style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '14px' }}
+              >
+                Chiudi
+              </button>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(filteredContacts.map(c => c.email).join(', '));
+                  alert('Email copiate negli appunti!');
+                }}
+                className="btn btn-primary"
+                style={{ padding: '8px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}
+              >
+                <Copy size={16} />
+                Copia Email
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

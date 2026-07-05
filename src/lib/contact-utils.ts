@@ -11,7 +11,7 @@ export interface Contact {
   consultations?: Consultation[];
 }
 
-export type ConsultationFilter = 'all' | 'none' | 'hasSome';
+export type ConsultationFilter = 'all' | 'none' | 'hasSome' | 'inactive';
 export type SortBy = 'name' | 'latestConsultation';
 
 /**
@@ -20,7 +20,8 @@ export type SortBy = 'name' | 'latestConsultation';
 export function filterContacts(
   contacts: Contact[],
   query: string,
-  filterType: ConsultationFilter
+  filterType: ConsultationFilter,
+  inactiveMonths: number = 0
 ): Contact[] {
   const lowerQuery = query.toLowerCase();
 
@@ -38,6 +39,13 @@ export function filterContacts(
     }
     if (filterType === 'none') {
       return !contact.consultations || contact.consultations.length === 0;
+    }
+    if (filterType === 'inactive') {
+      if (!contact.consultations || contact.consultations.length === 0) return true;
+      const latestConsultationDate = new Date(contact.consultations[0].consultation_date);
+      const cutoffDate = new Date();
+      cutoffDate.setMonth(cutoffDate.getMonth() - inactiveMonths);
+      return latestConsultationDate < cutoffDate;
     }
     return true; // 'all'
   });
