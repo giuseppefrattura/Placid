@@ -12,6 +12,7 @@ interface ContactCardProps {
   isDeleting: boolean;
   isDeletingConsultation: (id: number) => boolean;
   isAddingConsultation: boolean;
+  onToggleFollowup: (id: number, currentValue: boolean) => void;
 }
 
 export default function ContactCard({
@@ -23,7 +24,8 @@ export default function ContactCard({
   onDeleteConsultation,
   isDeleting,
   isDeletingConsultation,
-  isAddingConsultation
+  isAddingConsultation,
+  onToggleFollowup
 }: ContactCardProps) {
   const [copied, setCopied] = useState(false);
   const [consultationDate, setConsultationDate] = useState('');
@@ -123,6 +125,22 @@ export default function ContactCard({
                 {copied ? <Check size={12} /> : <Copy size={12} />}
               </button>
             </span>
+            <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center' }}>
+              <label 
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: contact.followup_mail_sent ? 'var(--success)' : 'var(--text-secondary)' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <input 
+                  type="checkbox" 
+                  checked={!!contact.followup_mail_sent}
+                  onChange={(e) => {
+                    onToggleFollowup(contact.id, !!contact.followup_mail_sent);
+                  }}
+                  style={{ accentColor: 'var(--success)', cursor: 'pointer' }}
+                />
+                Followup inviato
+              </label>
+            </div>
           </div>
         </div>
 

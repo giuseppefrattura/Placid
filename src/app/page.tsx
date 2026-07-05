@@ -10,24 +10,28 @@ const MOCK_CONTACTS = [
     id: 1001,
     name: 'Alessandro Neri',
     email: 'alessandro.neri@esempio.com',
+    followup_mail_sent: false,
     created_at: new Date().toISOString(),
   },
   {
     id: 1002,
     name: 'Giuseppe Frattura',
     email: 'giuseppe.frattura@esempio.com',
+    followup_mail_sent: false,
     created_at: new Date().toISOString(),
   },
   {
     id: 1003,
     name: 'Maria Rossi',
     email: 'maria.rossi@esempio.com',
+    followup_mail_sent: false,
     created_at: new Date().toISOString(),
   },
   {
     id: 1004,
     name: 'Sofia Bianchi',
     email: 'sofia.bianchi@esempio.com',
+    followup_mail_sent: false,
     created_at: new Date().toISOString(),
   },
 ];

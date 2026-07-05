@@ -8,10 +8,12 @@ export interface Contact {
   name: string;
   email: string;
   created_at: string;
+  followup_mail_sent?: boolean;
   consultations?: Consultation[];
 }
 
 export type ConsultationFilter = 'all' | 'none' | 'hasSome' | 'inactive';
+export type FollowupFilter = 'all' | 'sent' | 'not_sent';
 export type SortBy = 'name' | 'latestConsultation';
 
 /**
@@ -21,7 +23,8 @@ export function filterContacts(
   contacts: Contact[],
   query: string,
   filterType: ConsultationFilter,
-  inactiveMonths: number = 0
+  inactiveMonths: number = 0,
+  followupFilter: FollowupFilter = 'all'
 ): Contact[] {
   const lowerQuery = query.toLowerCase();
 
@@ -33,7 +36,11 @@ export function filterContacts(
 
     if (!matchesSearch) return false;
 
-    // 2. Consultation filter
+    // 2. Followup filter
+    if (followupFilter === 'sent' && !contact.followup_mail_sent) return false;
+    if (followupFilter === 'not_sent' && contact.followup_mail_sent) return false;
+
+    // 3. Consultation filter
     if (filterType === 'hasSome') {
       return contact.consultations && contact.consultations.length > 0;
     }

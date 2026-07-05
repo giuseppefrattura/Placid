@@ -29,6 +29,7 @@ export async function initDb() {
       id SERIAL PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
       email VARCHAR(255) NOT NULL UNIQUE,
+      followup_mail_sent BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
   `;
@@ -53,6 +54,7 @@ export async function initDb() {
   
   try {
     await query(createContactsTable);
+    await query(`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS followup_mail_sent BOOLEAN DEFAULT FALSE;`);
     await query(createUsersTable);
     await query(createConsultationsTable);
     isInitialized = true;

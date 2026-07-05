@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Plus, LogOut, Database, Users, Mail, Copy, X } from 'lucide-react';
-import { Contact, filterContacts, sortContacts, ConsultationFilter, SortBy } from '@/lib/contact-utils';
+import { Contact, filterContacts, sortContacts, ConsultationFilter, FollowupFilter, SortBy } from '@/lib/contact-utils';
 import ContactCard from '@/components/ContactCard';
 
 interface DashboardClientProps {
@@ -24,6 +24,7 @@ export default function DashboardClient({
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('name');
   const [consultationFilter, setConsultationFilter] = useState<ConsultationFilter>('all');
+  const [followupFilter, setFollowupFilter] = useState<FollowupFilter>('all');
   const [inactiveMonths, setInactiveMonths] = useState<number>(3);
   const [showEmailsModal, setShowEmailsModal] = useState(false);
 
@@ -160,9 +161,35 @@ export default function DashboardClient({
     }
   };
 
+  // Toggle followup mail status handler
+  const handleToggleFollowup = async (id: number, currentValue: boolean) => {
+    const newValue = !currentValue;
+    
+    // Update state optimistically
+    setContacts(prev => prev.map(c => c.id === id ? { ...c, followup_mail_sent: newValue } : c));
+
+    try {
+      const res = await fetch(`/api/contacts/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ followup_mail_sent: newValue }),
+      });
+
+      if (!res.ok) {
+        // revert on failure
+        setContacts(prev => prev.map(c => c.id === id ? { ...c, followup_mail_sent: currentValue } : c));
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'Impossibile aggiornare lo stato di followup.');
+      }
+    } catch (err) {
+      setContacts(prev => prev.map(c => c.id === id ? { ...c, followup_mail_sent: currentValue } : c));
+      alert("Errore di rete durante l'aggiornamento.");
+    }
+  };
+
   // Filter and sort contacts using extracted pure functions
   const filteredContacts = sortContacts(
-    filterContacts(contacts, searchQuery, consultationFilter, inactiveMonths),
+    filterContacts(contacts, searchQuery, consultationFilter, inactiveMonths, followupFilter),
     sortBy
   );
 
@@ -322,6 +349,31 @@ export default function DashboardClient({
                 </select>
               </div>
 
+              {/* Followup Filter Select */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Followup:</span>
+                <select
+                  value={followupFilter}
+                  onChange={(e) => setFollowupFilter(e.target.value as FollowupFilter)}
+                  className="form-input"
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '13px',
+                    borderRadius: '8px',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    borderColor: 'var(--border-color)',
+                    color: 'var(--text-primary)',
+                    cursor: 'pointer',
+                    height: '36px',
+                    width: 'auto'
+                  }}
+                >
+                  <option value="all" style={{ background: '#1c1e2b' }}>Tutti</option>
+                  <option value="sent" style={{ background: '#1c1e2b' }}>Inviati</option>
+                  <option value="not_sent" style={{ background: '#1c1e2b' }}>Da inviare</option>
+                </select>
+              </div>
+
               {/* Inactive Months Input */}
               {consultationFilter === 'inactive' && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -407,6 +459,7 @@ export default function DashboardClient({
                     isDeleting={deletingIds.has(contact.id)}
                     isDeletingConsultation={(id) => deletingConsultationIds.has(id)}
                     isAddingConsultation={addingConsultationIds.has(contact.id)}
+                    onToggleFollowup={handleToggleFollowup}
                   />
                 ))
               ) : (
